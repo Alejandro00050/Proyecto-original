@@ -9,7 +9,8 @@
  *
  * NO contiene lógica de negocio.
  */
-
+import { consultaNota } from "../../domain/Servicios/notasestudiantes.js"
+import { validarUsuarioLogeado } from "../../domain/Servicios/service.js"
 let currentPresenter = null;
 
 export function showClassView(
@@ -227,6 +228,17 @@ export function renderClasses(
         return;
     }
 
+    // Comprobar si el usuario activo es estudiante.
+    const usuarioActivo = JSON.parse(
+        localStorage.getItem("usuarioActivo") || "null"
+    );
+
+    const esEstudiante =
+        usuarioActivo &&
+        String(
+            usuarioActivo.tipoUsuario || usuarioActivo.role || ""
+        ).toLowerCase() === "estudiante";
+
     list.innerHTML = classes.map(
         classItem => `
 
@@ -268,24 +280,39 @@ export function renderClasses(
                         class="button button-secondary"
                         data-action="edit"
                         data-id="${escapeHtml(classItem.id)}"
+                        ${esEstudiante ? 'disabled title="Los estudiantes no pueden editar clases" style="cursor: not-allowed;"' : ""}
                     >
                         Editar
                     </button>
 
-                    <button
-                        class="button button-danger"
-                        data-action="delete"
-                        data-id="${escapeHtml(classItem.id)}"
-                    >
-                        Eliminar
-                    </button>
+                    ${esEstudiante ? "" : `
+                        <button
+                            class="button button-danger"
+                            data-action="delete"
+                            data-id="${escapeHtml(classItem.id)}"
+                        >
+                            Eliminar
+                        </button>
+                    `}
 
                 </div>
+
+                </div>
+                    <label for="identificacion">Consulta tu nota de Seguridad en Apps Móviles</label>
+                <button type="button" id="btn-consultar" class="btn btn-primary">
+                    Consultar nota
+                </button>
+                </div>
+
+                <div id="resultado"></div>
 
             </article>
 
         `
     ).join("");
+    console.log("classView");
+    validarUsuarioLogeado();
+    consultaNota()
 
     /*
      * Eventos de Editar
@@ -293,7 +320,7 @@ export function renderClasses(
 
     list
         .querySelectorAll(
-            '[data-action="edit"]'
+            '[data-action="edit"]:not(:disabled)'
         )
         .forEach(button => {
 
